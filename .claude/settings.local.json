@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(ddb devices:*)",
+      "Bash(ddb:*)",
+      "Bash(ddb *)",
+      "Bash(python -m ddb.cli:*)",
+      "Bash(./gradlew:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && wc -l {}')",
+      "Bash(python3:*)"
+    ]
+  }
+}
