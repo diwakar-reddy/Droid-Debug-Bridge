@@ -5,8 +5,8 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -152,7 +152,9 @@ class Adb:
         if not result.success:
             raise AdbError(f"Cannot reach adb: {result.stderr}", result)
         lines = [
-            l for l in result.stdout.splitlines()[1:] if l.strip() and "offline" not in l
+            line
+            for line in result.stdout.splitlines()[1:]
+            if line.strip() and "offline" not in line
         ]
         if not lines:
             raise AdbError(

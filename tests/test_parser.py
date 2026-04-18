@@ -1,17 +1,14 @@
 """Tests for the parser utilities — these don't require adb or a device."""
 
-import pytest
-
 from ddb.utils.parser import (
-    parse_ui_hierarchy,
-    parse_logcat_line,
-    parse_getprop,
-    parse_accessibility_tree,
     detect_compose_in_hierarchy,
     detect_project_type,
+    parse_accessibility_tree,
+    parse_getprop,
+    parse_logcat_line,
     parse_recomposition_stats,
+    parse_ui_hierarchy,
 )
-
 
 # ------------------------------------------------------------------
 # UI Hierarchy (uiautomator)
@@ -147,8 +144,9 @@ def test_parse_accessibility_tree_empty():
 # Project type detection
 # ------------------------------------------------------------------
 
+
 def test_detect_standard_project():
-    content = '''
+    content = """
     plugins {
         id 'com.android.application'
         id 'org.jetbrains.kotlin.android'
@@ -157,7 +155,7 @@ def test_detect_standard_project():
         namespace "com.example.app"
         compileSdk 34
     }
-    '''
+    """
     result = detect_project_type(content)
     assert result["type"] == "standard"
     assert result["has_compose"] is False
@@ -165,7 +163,7 @@ def test_detect_standard_project():
 
 
 def test_detect_compose_project():
-    content = '''
+    content = """
     plugins {
         id 'com.android.application'
         id 'org.jetbrains.kotlin.android'
@@ -179,7 +177,7 @@ def test_detect_compose_project():
     dependencies {
         implementation "androidx.compose.ui:compose-ui:1.5.0"
     }
-    '''
+    """
     result = detect_project_type(content)
     assert result["type"] == "compose"
     assert result["has_compose"] is True
@@ -187,7 +185,7 @@ def test_detect_compose_project():
 
 
 def test_detect_kmp_project():
-    content = '''
+    content = """
     plugins {
         id("org.jetbrains.kotlin.multiplatform")
         id("com.android.library")
@@ -197,7 +195,7 @@ def test_detect_kmp_project():
         iosX64()
         iosArm64()
     }
-    '''
+    """
     result = detect_project_type(content)
     assert result["type"] == "kmp"
     assert result["is_multiplatform"] is True
@@ -206,7 +204,7 @@ def test_detect_kmp_project():
 
 
 def test_detect_cmp_project():
-    content = '''
+    content = """
     plugins {
         id("org.jetbrains.compose")
         id("org.jetbrains.kotlin.multiplatform")
@@ -220,7 +218,7 @@ def test_detect_cmp_project():
     compose.desktop {
         application { }
     }
-    '''
+    """
     result = detect_project_type(content)
     assert result["type"] == "cmp"
     assert result["has_compose"] is True
@@ -233,6 +231,7 @@ def test_detect_cmp_project():
 # ------------------------------------------------------------------
 # Recomposition stats
 # ------------------------------------------------------------------
+
 
 def test_parse_recomposition_stats():
     log = """
@@ -250,6 +249,7 @@ def test_parse_recomposition_stats():
 # ------------------------------------------------------------------
 # Logcat
 # ------------------------------------------------------------------
+
 
 def test_parse_logcat_line_valid():
     line = "04-09 12:34:56.789  1234  5678 E MyTag   : Something went wrong"
@@ -342,8 +342,8 @@ def test_enrich_compose_nodes():
     # Find the button node (text="Login", resource-id="btn_login")
     btn = [n for n in nodes if n.get("text") == "Login"][0]
     assert btn["is_compose"] is True
-    assert btn["test_tag"] == "btn_login"     # testTag from resource-id (no :id/)
-    assert btn["role"] == "Button"             # inferred from android.widget.Button
+    assert btn["test_tag"] == "btn_login"  # testTag from resource-id (no :id/)
+    assert btn["role"] == "Button"  # inferred from android.widget.Button
 
     # Find the EditText node (resource-id="input_email")
     edit = [n for n in nodes if n.get("content_desc") == "Email address"][0]
@@ -354,8 +354,8 @@ def test_enrich_compose_nodes():
     # The node with com.example:id/legacy_view should NOT have test_tag
     # (it's a View resource-id format, not a Compose testTag)
     legacy = [n for n in nodes if "legacy_view" in n.get("resource_id", "")][0]
-    assert legacy["is_compose"] is True        # still under ComposeView subtree
-    assert legacy["test_tag"] == ""            # contains :id/ so not a testTag
+    assert legacy["is_compose"] is True  # still under ComposeView subtree
+    assert legacy["test_tag"] == ""  # contains :id/ so not a testTag
 
     # FrameLayout outside ComposeView should not be Compose
     frame = [n for n in nodes if n.get("class") == "android.widget.FrameLayout"][0]

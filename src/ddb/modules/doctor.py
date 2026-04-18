@@ -11,14 +11,12 @@ Usage:
 from __future__ import annotations
 
 import os
-import platform
 import shutil
 import subprocess
 from typing import Any, Dict, List, Optional
 
 from ddb.utils.adb import Adb
-from ddb.utils.output import err, ok
-
+from ddb.utils.output import ok
 
 # Each check returns a dict with:
 #   name: human-readable label
@@ -114,6 +112,7 @@ def doctor(
 # ------------------------------------------------------------------
 # Individual checks
 # ------------------------------------------------------------------
+
 
 def _check_adb_binary(adb: Adb) -> CheckResult:
     """Check that the adb binary exists and is executable."""
@@ -245,7 +244,7 @@ def _check_devices(adb: Adb) -> tuple:
         }
         return main, []
 
-    lines = [l.strip() for l in result.stdout.splitlines()[1:] if l.strip()]
+    lines = [line.strip() for line in result.stdout.splitlines()[1:] if line.strip()]
     if not lines:
         main = {
             "name": "Connected devices",
@@ -268,40 +267,48 @@ def _check_devices(adb: Adb) -> tuple:
 
         if state == "device":
             online_count += 1
-            device_checks.append({
-                "name": f"Device {serial}",
-                "status": "ok",
-                "detail": f"Online — {' '.join(parts[2:])}",
-            })
+            device_checks.append(
+                {
+                    "name": f"Device {serial}",
+                    "status": "ok",
+                    "detail": f"Online — {' '.join(parts[2:])}",
+                }
+            )
         elif state == "unauthorized":
-            device_checks.append({
-                "name": f"Device {serial}",
-                "status": "fail",
-                "detail": "Unauthorized — USB debugging not approved on device.",
-                "fix": (
-                    f"On the device, check for the 'Allow USB debugging?' dialog "
-                    f"and tap 'Allow'. If it doesn't appear, revoke authorizations: "
-                    f"Settings > Developer Options > Revoke USB debugging authorizations, "
-                    f"then reconnect."
-                ),
-            })
+            device_checks.append(
+                {
+                    "name": f"Device {serial}",
+                    "status": "fail",
+                    "detail": "Unauthorized — USB debugging not approved on device.",
+                    "fix": (
+                        "On the device, check for the 'Allow USB debugging?' dialog "
+                        "and tap 'Allow'. If it doesn't appear, revoke authorizations: "
+                        "Settings > Developer Options > Revoke USB debugging authorizations, "
+                        "then reconnect."
+                    ),
+                }
+            )
         elif state == "offline":
-            device_checks.append({
-                "name": f"Device {serial}",
-                "status": "fail",
-                "detail": "Offline — device not responding.",
-                "fix": (
-                    "Try: adb kill-server && adb start-server\n"
-                    "If it's an emulator, restart it.\n"
-                    "If USB, unplug and replug the cable."
-                ),
-            })
+            device_checks.append(
+                {
+                    "name": f"Device {serial}",
+                    "status": "fail",
+                    "detail": "Offline — device not responding.",
+                    "fix": (
+                        "Try: adb kill-server && adb start-server\n"
+                        "If it's an emulator, restart it.\n"
+                        "If USB, unplug and replug the cable."
+                    ),
+                }
+            )
         else:
-            device_checks.append({
-                "name": f"Device {serial}",
-                "status": "warn",
-                "detail": f"State: {state}",
-            })
+            device_checks.append(
+                {
+                    "name": f"Device {serial}",
+                    "status": "warn",
+                    "detail": f"State: {state}",
+                }
+            )
 
     if online_count == 0:
         main = {
@@ -373,7 +380,7 @@ def _check_android_home() -> CheckResult:
         home = os.path.expanduser("~")
         common = [
             os.path.join(home, "Library", "Android", "sdk"),  # macOS
-            os.path.join(home, "Android", "Sdk"),             # Linux
+            os.path.join(home, "Android", "Sdk"),  # Linux
         ]
         for c in common:
             if os.path.isdir(c):
@@ -400,7 +407,7 @@ def _check_android_home() -> CheckResult:
             "name": "ANDROID_HOME",
             "status": "fail",
             "detail": f"Set to '{android_home}' but directory does not exist.",
-            "fix": f"Fix the path or reinstall the Android SDK.",
+            "fix": "Fix the path or reinstall the Android SDK.",
         }
 
     # Check for key subdirectories
@@ -432,48 +439,57 @@ def _check_project(project_dir: str) -> List[CheckResult]:
     # Gradle wrapper
     gradlew = os.path.join(project_dir, "gradlew")
     if not os.path.isfile(gradlew):
-        checks.append({
-            "name": "Gradle wrapper",
-            "status": "fail",
-            "detail": f"No gradlew in {project_dir}",
-            "fix": (
-                "Not an Android project root, or Gradle wrapper is missing.\n"
-                "Generate with: gradle wrapper --gradle-version 8.5"
-            ),
-        })
-    else:
-        if not os.access(gradlew, os.X_OK):
-            checks.append({
+        checks.append(
+            {
                 "name": "Gradle wrapper",
                 "status": "fail",
-                "detail": f"gradlew exists but is not executable.",
-                "fix": f"Run: chmod +x {gradlew}",
-            })
+                "detail": f"No gradlew in {project_dir}",
+                "fix": (
+                    "Not an Android project root, or Gradle wrapper is missing.\n"
+                    "Generate with: gradle wrapper --gradle-version 8.5"
+                ),
+            }
+        )
+    else:
+        if not os.access(gradlew, os.X_OK):
+            checks.append(
+                {
+                    "name": "Gradle wrapper",
+                    "status": "fail",
+                    "detail": "gradlew exists but is not executable.",
+                    "fix": f"Run: chmod +x {gradlew}",
+                }
+            )
         else:
-            checks.append({
-                "name": "Gradle wrapper",
-                "status": "ok",
-                "detail": f"Found at {gradlew}",
-            })
+            checks.append(
+                {
+                    "name": "Gradle wrapper",
+                    "status": "ok",
+                    "detail": f"Found at {gradlew}",
+                }
+            )
 
     # Check for build.gradle
     has_build = any(
-        os.path.isfile(os.path.join(project_dir, f))
-        for f in ["build.gradle", "build.gradle.kts"]
+        os.path.isfile(os.path.join(project_dir, f)) for f in ["build.gradle", "build.gradle.kts"]
     )
     if has_build:
-        checks.append({
-            "name": "Build file",
-            "status": "ok",
-            "detail": "build.gradle(.kts) found",
-        })
+        checks.append(
+            {
+                "name": "Build file",
+                "status": "ok",
+                "detail": "build.gradle(.kts) found",
+            }
+        )
     else:
-        checks.append({
-            "name": "Build file",
-            "status": "fail",
-            "detail": "No build.gradle or build.gradle.kts found.",
-            "fix": "Make sure --project points to the project root.",
-        })
+        checks.append(
+            {
+                "name": "Build file",
+                "status": "fail",
+                "detail": "No build.gradle or build.gradle.kts found.",
+                "fix": "Make sure --project points to the project root.",
+            }
+        )
 
     # Check gradle/wrapper/gradle-wrapper.properties
     wrapper_props = os.path.join(project_dir, "gradle", "wrapper", "gradle-wrapper.properties")
@@ -483,19 +499,24 @@ def _check_project(project_dir: str) -> List[CheckResult]:
         if "distributionUrl" in content:
             # Extract Gradle version
             import re
+
             m = re.search(r"gradle-(\d+\.\d+(?:\.\d+)?)", content)
             version = m.group(1) if m else "unknown"
-            checks.append({
-                "name": "Gradle version",
-                "status": "ok",
-                "detail": f"Gradle {version}",
-            })
+            checks.append(
+                {
+                    "name": "Gradle version",
+                    "status": "ok",
+                    "detail": f"Gradle {version}",
+                }
+            )
     else:
-        checks.append({
-            "name": "Gradle version",
-            "status": "warn",
-            "detail": "gradle-wrapper.properties not found.",
-            "fix": "Run: gradle wrapper",
-        })
+        checks.append(
+            {
+                "name": "Gradle version",
+                "status": "warn",
+                "detail": "gradle-wrapper.properties not found.",
+                "fix": "Run: gradle wrapper",
+            }
+        )
 
     return checks

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,18 +7,19 @@ name = "ddb-tool"
 version = "0.1.0"
 description = "Droid Debug Bridge — CLI toolkit for AI-assisted Android development"
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = "MIT"
 requires-python = ">=3.8"
 authors = [
-    { name = "Trackonomysystems", email = "diwakar@trackonomysystems.com" },
+    { name = "Diwakar Reddy", email = "diwakar.reddy.p@gmail.com" },
 ]
 keywords = ["android", "adb", "cli", "development", "automation", "testing", "droid-debug-bridge"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Environment :: Console",
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Build Tools",
-    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Software Development :: Debuggers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -35,9 +36,10 @@ dependencies = []
 dev = ["pytest>=7.0", "pytest-cov", "black", "ruff", "mypy"]
 
 [project.urls]
-Homepage = "https://github.com/trackonomysystems/ddb"
-Documentation = "https://github.com/trackonomysystems/ddb#readme"
-Issues = "https://github.com/trackonomysystems/ddb/issues"
+Homepage = "https://github.com/diwakar-reddy/Droid-Debug-Bridge"
+Documentation = "https://github.com/diwakar-reddy/Droid-Debug-Bridge#readme"
+Issues = "https://github.com/diwakar-reddy/Droid-Debug-Bridge/issues"
+Changelog = "https://github.com/diwakar-reddy/Droid-Debug-Bridge/blob/main/CHANGELOG.md"
 
 [project.scripts]
 ddb = "ddb.cli:main"

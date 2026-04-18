@@ -1,3 +1,8 @@
 """Droid Debug Bridge — CLI toolkit for AI-assisted Android development."""
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("ddb-tool")
+except PackageNotFoundError:
+    __version__ = "0.0.0"

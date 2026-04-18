@@ -1,18 +1,18 @@
 """Tests for the Adb wrapper — uses mocking, no real device needed."""
 
 import subprocess
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ddb.utils.adb import Adb, AdbResult, AdbError
+from ddb.utils.adb import Adb, AdbError
 
 
 def test_adb_find_fallback():
     """When adb is nowhere, falls back to 'adb' string."""
-    with patch("shutil.which", return_value=None), \
-         patch("os.environ.get", return_value=None), \
-         patch("os.path.isfile", return_value=False):
+    with patch("shutil.which", return_value=None), patch(
+        "os.environ.get", return_value=None
+    ), patch("os.path.isfile", return_value=False):
         adb = Adb()
         assert adb.adb_path == "adb"
 

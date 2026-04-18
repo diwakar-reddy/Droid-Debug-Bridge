@@ -13,17 +13,17 @@ import struct
 import time
 from typing import Any, Dict, List, Optional
 
-from ddb.utils.adb import Adb, AdbError
+from ddb.utils.adb import Adb
 from ddb.utils.output import err, ok
 from ddb.utils.parser import (
     detect_compose_in_hierarchy,
     parse_ui_hierarchy,
 )
 
-
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+
 
 def _png_dimensions(path: str) -> tuple[int, int]:
     """Read width and height from a PNG file header without any external library.
@@ -41,6 +41,7 @@ def _png_dimensions(path: str) -> tuple[int, int]:
 # ------------------------------------------------------------------
 # Screenshot
 # ------------------------------------------------------------------
+
 
 def screenshot(adb: Adb, output_path: str = "screenshot.png") -> Dict:
     """Capture a screenshot and save it locally.
@@ -81,6 +82,7 @@ def screenshot(adb: Adb, output_path: str = "screenshot.png") -> Dict:
 # UI Hierarchy — Dual mode (uiautomator + accessibility)
 # ------------------------------------------------------------------
 
+
 def uidump(
     adb: Adb,
     simplify: bool = True,
@@ -116,10 +118,13 @@ def uidump(
             _enrich_compose_nodes(xml, nodes)
             if simplify:
                 nodes = [
-                    n for n in nodes
+                    n
+                    for n in nodes
                     if (
-                        n.get("text") or n.get("resource_id")
-                        or n.get("content_desc") or n.get("test_tag")
+                        n.get("text")
+                        or n.get("resource_id")
+                        or n.get("content_desc")
+                        or n.get("test_tag")
                         or n.get("role")
                     )
                 ]
@@ -162,10 +167,7 @@ def compose_tree(adb: Adb, package: Optional[str] = None) -> Dict:
 
     # Filter by package
     if package:
-        compose_nodes = [
-            n for n in compose_nodes
-            if package in n.get("package", "")
-        ]
+        compose_nodes = [n for n in compose_nodes if package in n.get("package", "")]
 
     return ok(
         {
@@ -252,6 +254,7 @@ def find_view(
 # Interaction
 # ------------------------------------------------------------------
 
+
 def tap(adb: Adb, x: int, y: int) -> Dict:
     """Tap at screen coordinates."""
     result = adb.shell(f"input tap {x} {y}")
@@ -294,8 +297,10 @@ def tap_view(
 
 def swipe(
     adb: Adb,
-    x1: int, y1: int,
-    x2: int, y2: int,
+    x1: int,
+    y1: int,
+    x2: int,
+    y2: int,
     duration_ms: int = 300,
 ) -> Dict:
     """Swipe from (x1,y1) to (x2,y2)."""
@@ -403,6 +408,7 @@ def wait_for_view(
 # Internal helpers
 # ------------------------------------------------------------------
 
+
 def _uiautomator_dump_raw(adb: Adb) -> Optional[str]:
     """Dump UI via uiautomator and return raw XML string."""
     device_path = "/sdcard/cab_uidump.xml"
@@ -436,10 +442,13 @@ def _parse_and_return_uiautomator(
     nodes = parse_ui_hierarchy(xml_str)
     if simplify:
         nodes = [
-            n for n in nodes
+            n
+            for n in nodes
             if (
-                n.get("text") or n.get("resource_id")
-                or n.get("content_desc") or n.get("test_tag")
+                n.get("text")
+                or n.get("resource_id")
+                or n.get("content_desc")
+                or n.get("test_tag")
                 or n.get("role")
             )
         ]
@@ -485,7 +494,8 @@ def _a11y_dump(adb: Adb, simplify: bool) -> Dict:
 
     if simplify:
         nodes = [
-            n for n in nodes
+            n
+            for n in nodes
             if (
                 n.get("text")
                 or n.get("resource_id")

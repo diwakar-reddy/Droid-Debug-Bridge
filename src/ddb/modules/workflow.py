@@ -7,11 +7,11 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
+from ddb.modules import build as build_mod
+from ddb.modules import logs as logs_mod
+from ddb.modules import ui as ui_mod
 from ddb.utils.adb import Adb
 from ddb.utils.output import err, ok
-from ddb.modules import build as build_mod
-from ddb.modules import ui as ui_mod
-from ddb.modules import logs as logs_mod
 
 
 def run(
@@ -135,7 +135,11 @@ def validate(adb: Adb, steps_file: str) -> Dict:
 
             elif action == "swipe":
                 step_result["result"] = ui_mod.swipe(
-                    adb, step["x1"], step["y1"], step["x2"], step["y2"],
+                    adb,
+                    step["x1"],
+                    step["y1"],
+                    step["x2"],
+                    step["y2"],
                     step.get("duration_ms", 300),
                 )
 
@@ -169,7 +173,7 @@ def validate(adb: Adb, steps_file: str) -> Dict:
                 else:
                     step_result["result"] = {
                         "success": False,
-                        "error": f"Assertion failed: view not found",
+                        "error": "Assertion failed: view not found",
                     }
 
             elif action == "logs":

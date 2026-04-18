@@ -60,7 +60,7 @@ def logs(
 
     # Apply grep filter
     if grep:
-        raw_lines = [l for l in raw_lines if grep.lower() in l.lower()]
+        raw_lines = [line for line in raw_lines if grep.lower() in line.lower()]
 
     # Take last N lines
     raw_lines = raw_lines[-lines:]
@@ -102,12 +102,10 @@ def crash_log(adb: Adb, package: str) -> Dict:
         crash_lines = result.stdout.strip().splitlines()
 
     # Also try ActivityManager for ANR and crash entries
-    am_result = adb.shell(
-        f"logcat -d -v threadtime -s ActivityManager:E AndroidRuntime:E -t 100"
-    )
+    am_result = adb.shell("logcat -d -v threadtime -s ActivityManager:E AndroidRuntime:E -t 100")
     am_lines: List[str] = []
     if am_result.success:
-        am_lines = [l for l in am_result.stdout.splitlines() if package in l]
+        am_lines = [line for line in am_result.stdout.splitlines() if package in line]
 
     all_lines = crash_lines + am_lines
     if not all_lines:

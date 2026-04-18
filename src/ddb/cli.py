@@ -49,14 +49,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from typing import List, Optional
 
 from ddb import __version__
+from ddb.modules import build, debug, device, doctor, logs, ui, workflow
+from ddb.modules import init as init_mod
 from ddb.utils.adb import Adb
-from ddb.utils.output import err
-from ddb.modules import build, debug, device, doctor, init as init_mod, logs, ui, workflow
+from ddb.utils.output import emit, err
 
 
 def main(argv: Optional[List[str]] = None) -> None:
@@ -64,11 +64,11 @@ def main(argv: Optional[List[str]] = None) -> None:
         prog="ddb",
         description="Droid Debug Bridge — CLI toolkit for AI-assisted Android development",
     )
+    parser.add_argument("-V", "--version", action="version", version=f"ddb {__version__}")
     parser.add_argument(
-        "-V", "--version", action="version", version=f"ddb {__version__}"
-    )
-    parser.add_argument(
-        "-s", "--serial", default=None,
+        "-s",
+        "--serial",
+        default=None,
         help="Device serial (or set DDB_DEVICE_SERIAL env var)",
     )
 
@@ -94,7 +94,9 @@ def main(argv: Optional[List[str]] = None) -> None:
     p.add_argument("--project", "-p", default=".", help="Project root directory")
     p.add_argument("--variant", "-v", default="debug", choices=["debug", "release"])
     p.add_argument(
-        "--module", "-m", default=None,
+        "--module",
+        "-m",
+        default=None,
         help="Gradle module name (auto-detected if omitted)",
     )
 
@@ -122,7 +124,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     p = sub.add_parser("uidump", help="Dump UI hierarchy")
     p.add_argument("--full", action="store_true", help="Include all nodes (no filtering)")
     p.add_argument(
-        "--mode", default="auto",
+        "--mode",
+        default="auto",
         choices=["auto", "view", "compose", "both"],
         help=(
             "Inspection mode: 'auto' detects Compose and switches, "
@@ -142,7 +145,9 @@ def main(argv: Optional[List[str]] = None) -> None:
     p.add_argument("--tag", dest="test_tag", help="Match by Compose testTag")
     p.add_argument("--role", help="Match by Compose semantic role (Button, Checkbox, etc.)")
     p.add_argument(
-        "--mode", default="auto", choices=["auto", "view", "compose", "both"],
+        "--mode",
+        default="auto",
+        choices=["auto", "view", "compose", "both"],
         help="Inspection mode",
     )
 
@@ -261,61 +266,69 @@ def main(argv: Optional[List[str]] = None) -> None:
 
 
 def _dispatch(args: argparse.Namespace, adb: Adb) -> None:
-    """Route the parsed command to the right module function."""
+    """Route the parsed command to the right module function.
+
+    Every branch captures the return dict and emits it exactly once
+    so that composite commands (tap-view, run, validate) produce a
+    single JSON object on stdout instead of one per internal call.
+    """
     cmd = args.command
+    result = None
 
     # Doctor / preflight
     if cmd == "doctor":
-        doctor.doctor(adb, project_dir=args.project, verbose=args.verbose)
+        result = doctor.doctor(adb, project_dir=args.project, verbose=args.verbose)
+        emit(result)
         return
 
     # Auto-preflight: for device-dependent commands, verify adb works first.
-    # This catches the "adb not found" case before the user gets a confusing error.
     _OFFLINE_COMMANDS = {"detect", "build", "doctor", "init"}
     if cmd not in _OFFLINE_COMMANDS:
         adb_check = doctor._check_adb_binary(adb)
         if adb_check["status"] == "fail":
-            err(
-                adb_check["detail"],
-                hint=adb_check.get("fix", "Install Android SDK Platform-Tools."),
+            emit(
+                err(
+                    adb_check["detail"],
+                    hint=adb_check.get("fix", "Install Android SDK Platform-Tools."),
+                )
             )
             return
 
     # Device
     if cmd == "devices":
-        device.devices(adb)
+        result = device.devices(adb)
     elif cmd == "info":
-        device.info(adb)
+        result = device.info(adb)
     elif cmd == "connect":
-        device.connect(args.target_serial)
+        result = device.connect(args.target_serial)
 
     # Project detection
     elif cmd == "detect":
-        build.detect(args.project)
+        result = build.detect(args.project)
 
     # Build & install
     elif cmd == "build":
-        build.build(args.project, variant=args.variant, module=args.module)
+        result = build.build(args.project, variant=args.variant, module=args.module)
     elif cmd == "install":
-        build.install(adb, args.apk, reinstall=not args.no_reinstall)
+        result = build.install(adb, args.apk, reinstall=not args.no_reinstall)
     elif cmd == "uninstall":
-        build.uninstall(adb, args.package)
+        result = build.uninstall(adb, args.package)
     elif cmd == "launch":
-        build.launch(adb, args.package, args.activity)
+        result = build.launch(adb, args.package, args.activity)
     elif cmd == "stop":
-        build.stop(adb, args.package)
+        result = build.stop(adb, args.package)
     elif cmd == "clear":
-        build.clear_data(adb, args.package)
+        result = build.clear_data(adb, args.package)
 
     # UI
     elif cmd == "screenshot":
-        ui.screenshot(adb, args.output)
+        result = ui.screenshot(adb, args.output)
     elif cmd == "uidump":
-        ui.uidump(adb, simplify=not args.full, mode=args.mode)
+        result = ui.uidump(adb, simplify=not args.full, mode=args.mode)
     elif cmd == "compose-tree":
-        ui.compose_tree(adb, package=args.package)
+        result = ui.compose_tree(adb, package=args.package)
     elif cmd == "find":
-        ui.find_view(
+        result = ui.find_view(
             adb,
             text=args.text,
             resource_id=args.resource_id,
@@ -326,9 +339,9 @@ def _dispatch(args: argparse.Namespace, adb: Adb) -> None:
             mode=args.mode,
         )
     elif cmd == "tap":
-        ui.tap(adb, args.x, args.y)
+        result = ui.tap(adb, args.x, args.y)
     elif cmd == "tap-view":
-        ui.tap_view(
+        result = ui.tap_view(
             adb,
             text=args.text,
             resource_id=args.resource_id,
@@ -337,19 +350,19 @@ def _dispatch(args: argparse.Namespace, adb: Adb) -> None:
             role=args.role,
         )
     elif cmd == "swipe":
-        ui.swipe(adb, args.x1, args.y1, args.x2, args.y2, args.duration)
+        result = ui.swipe(adb, args.x1, args.y1, args.x2, args.y2, args.duration)
     elif cmd == "text":
-        ui.input_text(adb, args.content)
+        result = ui.input_text(adb, args.content)
     elif cmd == "key":
-        ui.keyevent(adb, args.keyname)
+        result = ui.keyevent(adb, args.keyname)
     elif cmd == "longpress":
-        ui.long_press(adb, args.x, args.y, args.duration)
+        result = ui.long_press(adb, args.x, args.y, args.duration)
     elif cmd == "scroll-down":
-        ui.scroll_down(adb)
+        result = ui.scroll_down(adb)
     elif cmd == "scroll-up":
-        ui.scroll_up(adb)
+        result = ui.scroll_up(adb)
     elif cmd == "wait-for":
-        ui.wait_for_view(
+        result = ui.wait_for_view(
             adb,
             text=args.text,
             resource_id=args.resource_id,
@@ -361,37 +374,44 @@ def _dispatch(args: argparse.Namespace, adb: Adb) -> None:
 
     # Logs
     elif cmd == "logs":
-        logs.logs(adb, tag=args.tag, level=args.level, package=args.package, lines=args.lines, grep=args.grep)
+        result = logs.logs(
+            adb,
+            tag=args.tag,
+            level=args.level,
+            package=args.package,
+            lines=args.lines,
+            grep=args.grep,
+        )
     elif cmd == "logs-clear":
-        logs.logs_clear(adb)
+        result = logs.logs_clear(adb)
     elif cmd == "crash":
-        logs.crash_log(adb, args.package)
+        result = logs.crash_log(adb, args.package)
 
     # Debug
     elif cmd == "shell":
-        debug.shell(adb, args.cmd, timeout=args.timeout)
+        result = debug.shell(adb, args.cmd, timeout=args.timeout)
     elif cmd == "pull":
-        debug.pull_file(adb, args.device_path, args.local_path)
+        result = debug.pull_file(adb, args.device_path, args.local_path)
     elif cmd == "push":
-        debug.push_file(adb, args.local_path, args.device_path)
+        result = debug.push_file(adb, args.local_path, args.device_path)
     elif cmd == "perms":
-        debug.permissions(adb, args.package)
+        result = debug.permissions(adb, args.package)
     elif cmd == "grant":
-        debug.grant_permission(adb, args.package, args.permission)
+        result = debug.grant_permission(adb, args.package, args.permission)
     elif cmd == "revoke":
-        debug.revoke_permission(adb, args.package, args.permission)
+        result = debug.revoke_permission(adb, args.package, args.permission)
     elif cmd == "prefs":
-        debug.shared_prefs(adb, args.package, args.name)
+        result = debug.shared_prefs(adb, args.package, args.name)
     elif cmd == "db":
-        debug.query_db(adb, args.package, args.db_name, args.query)
+        result = debug.query_db(adb, args.package, args.db_name, args.query)
 
     # Init
     elif cmd == "init":
-        init_mod.init(args.project, force=args.force)
+        result = init_mod.init(args.project, force=args.force)
 
     # Workflows
     elif cmd == "run":
-        workflow.run(
+        result = workflow.run(
             adb,
             project_dir=args.project,
             package=args.package,
@@ -401,10 +421,13 @@ def _dispatch(args: argparse.Namespace, adb: Adb) -> None:
             clear_logs=not args.no_clear_logs,
         )
     elif cmd == "validate":
-        workflow.validate(adb, args.steps_file)
+        result = workflow.validate(adb, args.steps_file)
 
     else:
-        err(f"Unknown command: {cmd}")
+        result = err(f"Unknown command: {cmd}")
+
+    if result is not None:
+        emit(result)
 
 
 if __name__ == "__main__":

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from ddb.utils.adb import Adb, AdbError
 from ddb.utils.output import err, ok
@@ -106,6 +105,7 @@ def connect(serial: str) -> Dict:
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+
 
 def _extract_value(output: str) -> str:
     """Extract value after 'key: value' or 'key:value' patterns."""

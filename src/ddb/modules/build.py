@@ -8,16 +8,16 @@ from __future__ import annotations
 import glob
 import os
 import subprocess
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-from ddb.utils.adb import Adb, AdbError
+from ddb.utils.adb import Adb
 from ddb.utils.output import err, ok
 from ddb.utils.parser import detect_project_type
-
 
 # ------------------------------------------------------------------
 # Project Detection
 # ------------------------------------------------------------------
+
 
 def detect(project_dir: str) -> Dict:
     """Auto-detect project type, module layout, and build configuration.
@@ -63,13 +63,15 @@ def detect(project_dir: str) -> Dict:
     if not package_name and android_module:
         package_name = _find_package_in_manifest(project_dir, android_module)
 
-    project_info.update({
-        "project_dir": project_dir,
-        "root_build_file": root_build,
-        "modules": modules,
-        "android_module": android_module,
-        "package_name": package_name,
-    })
+    project_info.update(
+        {
+            "project_dir": project_dir,
+            "root_build_file": root_build,
+            "modules": modules,
+            "android_module": android_module,
+            "package_name": package_name,
+        }
+    )
 
     return ok(project_info, message=f"Detected {project_info['type']} project")
 
@@ -196,9 +198,7 @@ def launch(adb: Adb, package: str, activity: Optional[str] = None) -> Dict:
         result = adb.shell(f"am start -n {component}")
     else:
         # Use monkey to launch the default activity
-        result = adb.shell(
-            f"monkey -p {package} -c android.intent.category.LAUNCHER 1"
-        )
+        result = adb.shell(f"monkey -p {package} -c android.intent.category.LAUNCHER 1")
 
     if not result.success:
         return err(f"Failed to launch: {result.stderr}")
@@ -226,6 +226,7 @@ def clear_data(adb: Adb, package: str) -> Dict:
 # Helpers
 # ------------------------------------------------------------------
 
+
 def _find_build_file(directory: str) -> Optional[str]:
     """Find build.gradle or build.gradle.kts in a directory."""
     for name in ["build.gradle.kts", "build.gradle"]:
@@ -252,6 +253,7 @@ def _extract_modules(settings_file: str) -> List[str]:
 
     # Match include(":app"), include(":composeApp"), etc.
     import re
+
     for m in re.finditer(r'include\s*\(\s*"([^"]+)"\s*\)', content):
         mod = m.group(1).lstrip(":")
         modules.append(mod)

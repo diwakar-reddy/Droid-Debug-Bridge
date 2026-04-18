@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any, Dict, List, Optional
 
 # ====================================================================
 # UI Hierarchy (uiautomator dump) — works for View-based UIs
 # ====================================================================
+
 
 def parse_ui_hierarchy(xml_str: str) -> List[Dict[str, Any]]:
     """Parse uiautomator XML dump into a flat list of view nodes.
@@ -118,9 +118,7 @@ _A11Y_NODE_START_RE = re.compile(
     r"android\.view\.accessibility\.AccessibilityNodeInfo@([0-9a-fA-F]+)"
 )
 
-_A11Y_BOUNDS_RE = re.compile(
-    r"boundsInScreen:\s*Rect\((\d+),\s*(\d+)\s*-\s*(\d+),\s*(\d+)\)"
-)
+_A11Y_BOUNDS_RE = re.compile(r"boundsInScreen:\s*Rect\((\d+),\s*(\d+)\s*-\s*(\d+),\s*(\d+)\)")
 
 _A11Y_KV_PATTERNS = {
     "text": re.compile(r"text:\s*(.+?)(?:;|$)"),
@@ -183,9 +181,7 @@ def parse_accessibility_tree(dump_output: str) -> List[Dict[str, Any]]:
     return nodes
 
 
-def _parse_a11y_node(
-    lines: List[str], depth: int, index: int
-) -> Optional[Dict[str, Any]]:
+def _parse_a11y_node(lines: List[str], depth: int, index: int) -> Optional[Dict[str, Any]]:
     """Parse a single accessibility node from its text lines."""
     text = " ".join(lines)
 
@@ -276,6 +272,7 @@ def _parse_a11y_node(
 # the recomposition tree. We parse this to detect Compose layout
 # structure.
 
+
 def detect_compose_in_hierarchy(xml_str: str) -> bool:
     """Check if a uiautomator dump contains Compose views.
 
@@ -313,9 +310,7 @@ def parse_logcat_line(line: str) -> Optional[Dict[str, str]]:
 # ====================================================================
 
 _RECOMP_RE = re.compile(
-    r"Recomposition\s+(?P<composable>\S+)\s+"
-    r"count=(?P<count>\d+)\s+"
-    r"skipped=(?P<skipped>\d+)"
+    r"Recomposition\s+(?P<composable>\S+)\s+" r"count=(?P<count>\d+)\s+" r"skipped=(?P<skipped>\d+)"
 )
 
 
@@ -329,17 +324,20 @@ def parse_recomposition_stats(logcat_output: str) -> List[Dict[str, Any]]:
     for line in logcat_output.splitlines():
         m = _RECOMP_RE.search(line)
         if m:
-            stats.append({
-                "composable": m.group("composable"),
-                "recomposition_count": int(m.group("count")),
-                "skipped": int(m.group("skipped")),
-            })
+            stats.append(
+                {
+                    "composable": m.group("composable"),
+                    "recomposition_count": int(m.group("count")),
+                    "skipped": int(m.group("skipped")),
+                }
+            )
     return stats
 
 
 # ====================================================================
 # Device properties
 # ====================================================================
+
 
 def parse_getprop(output: str) -> Dict[str, str]:
     """Parse ``adb shell getprop`` output into a dict."""
@@ -358,17 +356,22 @@ def parse_getprop(output: str) -> Dict[str, str]:
 
 # KMP/CMP common module names
 KMP_MODULES = [
-    "composeApp", "androidApp", "shared", "common",
-    "iosApp", "desktopApp", "webApp",
+    "composeApp",
+    "androidApp",
+    "shared",
+    "common",
+    "iosApp",
+    "desktopApp",
+    "webApp",
 ]
 
 # Gradle files that signal project type
 COMPOSE_MARKERS = [
-    "org.jetbrains.compose",           # CMP plugin
+    "org.jetbrains.compose",  # CMP plugin
     "org.jetbrains.kotlin.multiplatform",  # KMP plugin
-    "compose.desktop",                  # CMP desktop
-    "compose.experimental.web",         # CMP web
-    "kotlin(\"multiplatform\")",        # KMP DSL
+    "compose.desktop",  # CMP desktop
+    "compose.experimental.web",  # CMP web
+    'kotlin("multiplatform")',  # KMP DSL
 ]
 
 
@@ -385,15 +388,26 @@ def detect_project_type(build_gradle_content: str) -> Dict[str, Any]:
     """
     content = build_gradle_content.lower()
 
-    has_compose = any(marker.lower() in content for marker in [
-        "compose", "jetpack compose", "org.jetbrains.compose",
-        "compose-compiler", "compose.ui", "androidx.compose",
-    ])
+    has_compose = any(
+        marker.lower() in content
+        for marker in [
+            "compose",
+            "jetpack compose",
+            "org.jetbrains.compose",
+            "compose-compiler",
+            "compose.ui",
+            "androidx.compose",
+        ]
+    )
 
-    is_kmp = any(marker.lower() in content for marker in [
-        "multiplatform", "kotlin(\"multiplatform\")",
-        "org.jetbrains.kotlin.multiplatform",
-    ])
+    is_kmp = any(
+        marker.lower() in content
+        for marker in [
+            "multiplatform",
+            'kotlin("multiplatform")',
+            "org.jetbrains.kotlin.multiplatform",
+        ]
+    )
 
     is_cmp = "org.jetbrains.compose" in content or "compose.desktop" in content
 

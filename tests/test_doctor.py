@@ -1,32 +1,28 @@
 """Tests for the doctor module — uses mocking, no real device needed."""
 
 import os
-import subprocess
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import MagicMock, patch
 
-import pytest
-
-from ddb.utils.adb import Adb, AdbResult
 from ddb.modules.doctor import (
-    doctor,
     _check_adb_binary,
     _check_adb_server,
-    _check_platform_tools_version,
+    _check_android_home,
     _check_devices,
     _check_java,
-    _check_android_home,
+    _check_platform_tools_version,
     _check_project,
+    doctor,
 )
-
+from ddb.utils.adb import Adb, AdbResult
 
 # ------------------------------------------------------------------
 # ADB binary check
 # ------------------------------------------------------------------
 
+
 def test_check_adb_binary_found():
     adb = Adb(adb_path="/usr/local/bin/adb")
-    with patch("os.path.isfile", return_value=True), \
-         patch("os.access", return_value=True):
+    with patch("os.path.isfile", return_value=True), patch("os.access", return_value=True):
         result = _check_adb_binary(adb)
         assert result["status"] == "ok"
         assert "/usr/local/bin/adb" in result["detail"]
@@ -43,8 +39,7 @@ def test_check_adb_binary_not_found():
 
 def test_check_adb_binary_not_executable():
     adb = Adb(adb_path="/usr/local/bin/adb")
-    with patch("os.path.isfile", return_value=True), \
-         patch("os.access", return_value=False):
+    with patch("os.path.isfile", return_value=True), patch("os.access", return_value=False):
         result = _check_adb_binary(adb)
         assert result["status"] == "fail"
         assert "not executable" in result["detail"]
@@ -53,6 +48,7 @@ def test_check_adb_binary_not_executable():
 # ------------------------------------------------------------------
 # ADB server check
 # ------------------------------------------------------------------
+
 
 def test_check_adb_server_ok():
     adb = Adb(adb_path="/usr/local/bin/adb")
@@ -77,6 +73,7 @@ def test_check_adb_server_fail():
 # ------------------------------------------------------------------
 # Platform-tools version
 # ------------------------------------------------------------------
+
 
 def test_check_platform_tools_modern():
     adb = Adb(adb_path="/usr/local/bin/adb")
@@ -104,6 +101,7 @@ def test_check_platform_tools_old():
 # ------------------------------------------------------------------
 # Device connectivity
 # ------------------------------------------------------------------
+
 
 def test_check_devices_one_online():
     adb = Adb(adb_path="/usr/local/bin/adb")
@@ -144,6 +142,7 @@ def test_check_devices_none():
 # Java
 # ------------------------------------------------------------------
 
+
 def test_check_java_present():
     with patch("shutil.which", return_value="/usr/bin/java"):
         mock_proc = MagicMock()
@@ -166,16 +165,17 @@ def test_check_java_missing():
 # ANDROID_HOME
 # ------------------------------------------------------------------
 
+
 def test_check_android_home_set():
-    with patch.dict(os.environ, {"ANDROID_HOME": "/opt/android-sdk"}), \
-         patch("os.path.isdir", return_value=True):
+    with patch.dict(os.environ, {"ANDROID_HOME": "/opt/android-sdk"}), patch(
+        "os.path.isdir", return_value=True
+    ):
         result = _check_android_home()
         assert result["status"] == "ok"
 
 
 def test_check_android_home_not_set():
-    with patch.dict(os.environ, {}, clear=True), \
-         patch("os.path.isdir", return_value=False):
+    with patch.dict(os.environ, {}, clear=True), patch("os.path.isdir", return_value=False):
         result = _check_android_home()
         assert result["status"] == "warn"
 
@@ -183,6 +183,7 @@ def test_check_android_home_not_set():
 # ------------------------------------------------------------------
 # Project checks
 # ------------------------------------------------------------------
+
 
 def test_check_project_good(tmp_path):
     # Create a minimal project structure
@@ -215,6 +216,7 @@ def test_check_project_missing_gradlew(tmp_path):
 # Full doctor
 # ------------------------------------------------------------------
 
+
 def test_doctor_full_pass(capsys):
     """Full doctor run with everything mocked as healthy."""
     adb = Adb(adb_path="/usr/local/bin/adb")
@@ -235,13 +237,17 @@ def test_doctor_full_pass(capsys):
             return devices_result
         return AdbResult(success=True)
 
-    with patch.object(adb, "run", side_effect=mock_run), \
-         patch("os.path.isfile", return_value=True), \
-         patch("os.access", return_value=True), \
-         patch("shutil.which", return_value="/usr/bin/java"), \
-         patch("subprocess.run", return_value=MagicMock(stderr='openjdk version "17"', stdout="")), \
-         patch.dict(os.environ, {"ANDROID_HOME": "/opt/sdk"}), \
-         patch("os.path.isdir", return_value=True):
+    with patch.object(adb, "run", side_effect=mock_run), patch(
+        "os.path.isfile", return_value=True
+    ), patch("os.access", return_value=True), patch(
+        "shutil.which", return_value="/usr/bin/java"
+    ), patch(
+        "subprocess.run", return_value=MagicMock(stderr='openjdk version "17"', stdout="")
+    ), patch.dict(
+        os.environ, {"ANDROID_HOME": "/opt/sdk"}
+    ), patch(
+        "os.path.isdir", return_value=True
+    ):
 
         result = doctor(adb)
         assert result["data"]["overall"] == "healthy"

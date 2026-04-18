@@ -70,7 +70,10 @@ def permissions(adb: Adb, package: str) -> Dict:
             in_install = True
             in_runtime = False
             continue
-        if stripped.startswith("gids=") or (not stripped.startswith("android.permission") and "permission" not in stripped.lower()):
+        is_non_permission = stripped.startswith("gids=") or (
+            not stripped.startswith("android.permission") and "permission" not in stripped.lower()
+        )
+        if is_non_permission:
             if in_runtime or in_install:
                 # Might be end of section
                 if not stripped or stripped.startswith("["):
@@ -90,12 +93,14 @@ def permissions(adb: Adb, package: str) -> Dict:
             perm = stripped.split(":")[0].strip()
             install_perms.append(perm)
 
-    return ok({
-        "package": package,
-        "runtime_granted": granted,
-        "runtime_denied": denied,
-        "install_permissions": install_perms,
-    })
+    return ok(
+        {
+            "package": package,
+            "runtime_granted": granted,
+            "runtime_denied": denied,
+            "install_permissions": install_perms,
+        }
+    )
 
 
 def grant_permission(adb: Adb, package: str, permission: str) -> Dict:
@@ -179,9 +184,7 @@ def query_db(adb: Adb, package: str, db_name: str, query: str) -> Dict:
     safe_query = query.replace("'", "'\\''")
     db_path = f"databases/{db_name}"
 
-    result = adb.shell(
-        f"run-as {package} sqlite3 {db_path} '{safe_query}'"
-    )
+    result = adb.shell(f"run-as {package} sqlite3 {db_path} '{safe_query}'")
     if not result.success:
         return err(
             f"Query failed: {result.stderr}",

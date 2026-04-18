@@ -1,3 +1,8 @@
+[![CI](https://github.com/diwakar-reddy/Droid-Debug-Bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/diwakar-reddy/Droid-Debug-Bridge/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/ddb-tool)](https://pypi.org/project/ddb-tool/)
+[![Python](https://img.shields.io/pypi/pyversions/ddb-tool)](https://pypi.org/project/ddb-tool/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 # ddb — Droid Debug Bridge
 
 A zero-dependency CLI toolkit that bridges AI coding assistants (Claude Code, Copilot, Cursor, etc.) with Android devices and emulators. Build, install, interact with UI, read logs, and debug — all from structured JSON commands an AI can parse reliably.
@@ -279,11 +284,13 @@ Workflow:
 - Android SDK Platform-Tools (`adb` on PATH)
 - A connected device or running emulator
 
+> **Windows:** ddb works best under WSL or Git Bash. Native `cmd.exe` is untested — `adb` must still be on your PATH.
+
 ## Development
 
 ```bash
-git clone https://github.com/trackonomysystems/ddb.git
-cd ddb
+git clone https://github.com/diwakar-reddy/Droid-Debug-Bridge.git
+cd Droid-Debug-Bridge
 pip install -e ".[dev]"
 pytest
 ```
